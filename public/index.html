@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="style.css">
+    <title>Document</title>
+</head>
+
+<body>
+    <div class="app">
+        <div class="screen chat-screen active">
+            <div class="header">
+                <div class="logo">Chatroom</div>
+                <button id="exit-chat">Exit</button>
+            </div>
+            <div class="messages">
+            </div>
+            <div class="typebox">
+                <input type="text" id="alias-input" placeholder="Enter alias...">
+                <input type="text" id="message-input" placeholder="Enter messages...">
+                <button id="send-message">Send</button>
+            </div>
+        </div>
+    </div>
+    <script>
+	const app = document.querySelector(".app");
+        const socket = new WebSocket('ws://34.239.200.81:8080/');
+
+        app.querySelector('.chat-screen #send-message').addEventListener("click", () => {
+            const message = app.querySelector('.chat-screen #message-input').value;
+            const username = app.querySelector('.chat-screen #alias-input').value;
+            if (message.length == 0 || username.length == 0) {
+                return;
+            }
+            uname = username;
+            const time = new Date();
+            const msgObj = {
+                username: username,
+                text: message,
+                timestamp: `${time.getHours()}:${time.getMinutes() < 10 ? "0" + time.getMinutes() : time.getMinutes()}`
+            }
+            renderMessage("my", msgObj);
+            socket.send(JSON.stringify(msgObj));
+            app.querySelector('.chat-screen #message-input').value = "";
+        });
+
+        socket.onmessage = (event) => {
+            renderMessage("other", JSON.parse(event.data));
+        }
+
+        function renderMessage(type, message) {
+            const messageContainer = app.querySelector(".chat-screen .messages");
+            if (type == "my") {
+                const el = document.createElement("div");
+                el.setAttribute("class", "message my-message");
+                el.innerHTML = `
+                    <div>
+                        <div class="name">You ${message.timestamp}</div>
+                        <div class="text">${message.text}</div>
+                    </div>
+                `;
+                messageContainer.appendChild(el);
+            } else {
+                const el = document.createElement("div");
+                el.setAttribute("class", "message other-message");
+                el.innerHTML = `
+                    <div>
+                        <div class="name">${message.username} ${message.timestamp}</div>
+                        <div class="text">${message.text}</div>
+                    </div>
+                `;
+                messageContainer.appendChild(el);
+            }
+            messageContainer.scrollTop = messageContainer.scrollHeight - messageContainer.clientHeight;
+        };
+    </script>
+</body>
+
+</html>
