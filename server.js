@@ -23,7 +23,7 @@ wss.on('connection', (socket) => {
     }
 });
 
-redis.subscribe("RedisServerSend", "messageList", "WSSMessageSend", "connection", (err, count) => {
+redis.subscribe("RedisServerSend", "messageList", (err, count) => {
     if (err) {
         console.log(err);
     } else {
@@ -51,25 +51,7 @@ redis.on("message", (channel, message) => {
             }
         });
     };
-    if (channel === "WSSMessageSend") {
-        const messageData = JSON.parse(message).data;
-        redis.lpush("messages", messageData);
-        redis.publish("RedisServerSend", message);
-    }
-    if (channel === "connection") {
-        const messageList = await sendMessages();
-        redis.publish("messageList", JSON.stringify({ messageList: messageList, socket: message }));
-    }
 });
-
-async function sendMessages() {
-    let data = await redis.lrange("messages", 0, -1);
-    while (data.length > 25) {
-        await redis.rpop("messages");
-        data = await redis.lrange("messages", 0, -1);
-    }
-    return data;
-};
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
