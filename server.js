@@ -1,9 +1,10 @@
-import express from 'express';
-import http from 'http';
-import { fileURLToPath } from 'url';
 import path, { dirname } from 'path';
-import { WebSocketServer } from 'ws';
+
 import Redis from 'ioredis';
+import { WebSocketServer } from 'ws';
+import express from 'express';
+import { fileURLToPath } from 'url';
+import http from 'http';
 import { v4 as uuid } from 'uuid';
 
 const app = express();
