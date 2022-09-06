@@ -22,11 +22,11 @@ wss.on('connection', async (socket) => {
     })
     socket.onmessage = (event) => {
         const payload = JSON.stringify({ data: event.data, socket: socket.id });
-        redis.publish("WSSMessageSend", payload);
+        redis.publish("RedisServerSend", payload);
     }
 });
 
-redis.subscribe("RedisServerSend", "WSSMessageSend", (err, count) => {
+redis.subscribe("RedisServerSend", (err, count) => {
     if (err) {
         console.log(err);
     } else {
@@ -37,21 +37,17 @@ redis.subscribe("RedisServerSend", "WSSMessageSend", (err, count) => {
 redis.on("message", (channel, message) => {
     if (channel === "RedisServerSend") {
         const { data, socket } = JSON.parse(message);
+        redis.lpush("messages", data);
         [...wss.clients].forEach(c => {
             if (c.id == socket) {
-                return
+                return;
             }
             c.send(data);
         });
-    };
-    if (channel === "WSSMessageSend") {
-        const messageData = JSON.parse(message).data;
-        redis.lpush("messages", messageData);
-        redis.publish("RedisServerSend", message);
     }
 });
 
-async function getMessages(socket) {
+async function getMessages() {
     let data = await redis.lrange("messages", 0, -1);
     while (data.length > 25) {
         await redis.rpop("messages");
