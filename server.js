@@ -57,7 +57,7 @@ async function getMessages(socket) {
         await redis.rpop("messages");
         data = await redis.lrange("messages", 0, -1);
     }
-    return data;
+    return data.reverse();
 };
 
 const __filename = fileURLToPath(import.meta.url);
