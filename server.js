@@ -16,6 +16,7 @@ const redis = await new Redis.Cluster(redisClusterInfoList);
 
 wss.on('connection', (socket) => {
     socket.id = uuid();
+    socket.sent = false;
     redis.publish("connection", socket.id);
     socket.onmessage = (event) => {
         const payload = JSON.stringify({ data: event.data, socket: socket.id });
@@ -38,6 +39,7 @@ redis.on("message", async (channel, message) => {
             if (c.id == socket) {
                 return
             }
+            console.log(c.sent);
             c.send(data);
         });
     };
