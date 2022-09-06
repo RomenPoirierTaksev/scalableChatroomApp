@@ -31,7 +31,7 @@ redis.subscribe("RedisServerSend", "messageList", "WSSMessageSend", "connection"
     }
 });
 
-redis.on("message", (channel, message) => {
+redis.on("message", async (channel, message) => {
     if (channel === "RedisServerSend") {
         const { data, socket } = JSON.parse(message);
         [...wss.clients].forEach(c => {
