@@ -14,17 +14,19 @@ const wss = new WebSocketServer({ server: httpServer });
 const redisClusterInfoList = ["chatroomappredisinstance.vjgbsq.clustercfg.use1.cache.amazonaws.com", 6379];
 const redis = await new Redis.Cluster(redisClusterInfoList);
 
-wss.on('connection', (socket) => {
+wss.on('connection', async (socket) => {
     socket.id = uuid();
-    socket.sent = false;
-    redis.publish("connection", socket.id);
+    const messageList = await getMessages();
+    messageList.forEach(msg => {
+        socket.send(msg);
+    })
     socket.onmessage = (event) => {
         const payload = JSON.stringify({ data: event.data, socket: socket.id });
         redis.publish("WSSMessageSend", payload);
     }
 });
 
-redis.subscribe("RedisServerSend", "messageList", "WSSMessageSend", "connection", (err, count) => {
+redis.subscribe("RedisServerSend", "WSSMessageSend", (err, count) => {
     if (err) {
         console.log(err);
     } else {
@@ -32,25 +34,14 @@ redis.subscribe("RedisServerSend", "messageList", "WSSMessageSend", "connection"
     }
 });
 
-redis.on("message", async (channel, message) => {
+redis.on("message", (channel, message) => {
     if (channel === "RedisServerSend") {
         const { data, socket } = JSON.parse(message);
         [...wss.clients].forEach(c => {
             if (c.id == socket) {
                 return
             }
-            console.log(c.sent);
             c.send(data);
-        });
-    };
-    if (channel === "messageList") {
-        const { messageList, socket } = JSON.parse(message);
-        [...wss.clients].forEach(c => {
-            if (c.id == socket) {
-                for (let i = messageList.length - 1; i >= 0; i--) {
-                    c.send(messageList[i]);
-                }
-            }
         });
     };
     if (channel === "WSSMessageSend") {
@@ -58,13 +49,9 @@ redis.on("message", async (channel, message) => {
         redis.lpush("messages", messageData);
         redis.publish("RedisServerSend", message);
     }
-    if (channel === "connection") {
-        const messageList = await sendMessages();
-        redis.publish("messageList", JSON.stringify({ messageList: messageList, socket: message }));
-    }
 });
 
-async function sendMessages() {
+async function getMessages(socket) {
     let data = await redis.lrange("messages", 0, -1);
     while (data.length > 25) {
         await redis.rpop("messages");
