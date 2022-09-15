@@ -27,7 +27,7 @@
     </div>
     <script>
         const app = document.querySelector(".app");
-        //put change to loadbalancer url
+        //add websocket to loadbalancer url
         const socket = new WebSocket('ws://34.239.200.81:8080/');
 
         app.querySelector('.chat-screen #send-message').addEventListener("click", () => {
